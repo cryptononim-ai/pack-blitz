@@ -5,20 +5,25 @@
 //
 // Adapted from MagicBlock's official roll-dice-DELEGATED example
 // (https://github.com/magicblock-labs/magicblock-engine-examples/tree/main/roll-dice/anchor/programs/roll-dice-delegated)
-// with the VRF quickstart API pinned to ephemeral-rollups-sdk 0.18
-// (https://docs.magicblock.gg/pages/verifiable-randomness-functions-vrfs/how-to-guide/quickstart).
+// with ephemeral-rollups-sdk 0.16.2 (the exact version the upstream example
+// pins; 0.18 dropped `create_request_scoped_randomness_ix`).
 //
-// LESSON (25 Nov 2026, found the hard way): the randomness request MUST
-// use `create_request_scoped_randomness_ix` — the exact call the upstream
-// delegated example uses. The first version used
-// `create_request_randomness_ix_const` (from the docs quickstart); the
-// request was accepted by the VRF program (Idx 16) but the callback
-// `callback_open_pack` then burned its whole 273,211 CU budget and died
-// with ProgramFailedToComplete (10 oracle retries, all failed, PDA stayed
-// 0/0). Switched to the scoped variant to match the proven program.
+// CALLBACK BUG, STILL OPEN (25 Nov 2026): `callback_open_pack` burns its
+// whole CU budget (270k on the VRF-invoked path, 200k on a direct call)
+// and dies with ProgramFailedToComplete BEFORE the handler's first msg!.
+// Ruled out: request variant (const 0.18 AND scoped 0.16.2 both fail
+// identically), identity (the VRF program signs with the correct scoped
+// PDA, bump 255), account structure (IDL is byte-identical in shape to
+// the working demo program's), program size (370KB vs demo 327KB),
+// build profile (release/optimized). The working demo callback costs
+// ~10k CU. Current hypothesis: the `#[vrf_callback]` macro's generated
+// address-constraint code (or Anchor 1.0.2's handling of it) loops/burns.
+// DIAGNOSTIC: the macro is removed below; the identity is a plain Signer
+// and is checked inside the handler after a first msg! so the burn's
+// location becomes visible in the logs.
 use anchor_lang::prelude::*;
 use ephemeral_rollups_sdk::{
-    anchor::{commit, delegate, ephemeral, vrf, vrf_callback},
+    anchor::{commit, delegate, ephemeral, vrf},
     cpi::DelegateConfig,
     ephem::MagicIntentBundleBuilder,
     vrf::{
@@ -81,7 +86,15 @@ pub mod pack_blitz {
         randomness: [u8; 32],
         client_seed: u8,
     ) -> Result<()> {
-        msg!("client_seed={}", client_seed);
+        msg!("callback entered, client_seed={}", client_seed);
+        // DIAGNOSTIC (see header): identity checked in-handler, not via the
+        // #[vrf_callback] macro, until the CU-burn location is known.
+        require_keys_eq!(
+            ctx.accounts.vrf_program_identity.key(),
+            vrf::consts::scoped_vrf_identity(&crate::ID),
+            ErrorCode::ConstraintAddress
+        );
+        msg!("identity ok");
         let player = &mut ctx.accounts.player;
         let rnd_u8 = vrf::rnd::random_u8_with_range(&randomness, 1, 6);
         player.last_result = rnd_u8;
@@ -146,9 +159,12 @@ pub struct OpenPackCtx<'info> {
     pub oracle_queue: UncheckedAccount<'info>,
 }
 
-#[vrf_callback]
 #[derive(Accounts)]
 pub struct CallbackOpenPackCtx<'info> {
+    /// CHECK: VRF program identity — validated in the handler (diagnostic
+    /// for the callback CU-burn; see header). Normally this field is
+    /// injected by `#[vrf_callback]` with an address constraint.
+    pub vrf_program_identity: Signer<'info>,
     #[account(mut)]
     pub player: Account<'info, Player>,
 }
