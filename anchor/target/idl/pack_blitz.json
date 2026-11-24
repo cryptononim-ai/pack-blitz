@@ -28,8 +28,8 @@
         {
           "name": "vrf_program_identity",
           "docs": [
-            "Scoped VRF identity PDA, bound to this program. Its presence as a signer proves",
-            "the callback was issued by the VRF program for this program."
+            "for the callback CU-burn; see header). Normally this field is",
+            "injected by `#[vrf_callback]` with an address constraint."
           ],
           "signer": true
         },
