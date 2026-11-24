@@ -1,0 +1,77 @@
+# Deploy Pack Blitz program to Solana devnet
+#
+# Builds the Anchor program and deploys it to devnet from GitHub Actions
+# (the build VM cannot reach rust-lang.org / release.anza.xyz).
+# The deployed program ID + IDL are committed back to the repo so the
+# frontend can switch to our own program with a config change.
+#
+# Required repo secrets (set once with `gh secret set`):
+#   SOLANA_DEPLOY_KEYPAIR  — JSON array secret key of the deployer wallet
+#                             (devnet only; fund it with ~2 devnet SOL via
+#                             https://solfaucet.com or https://faucet.solana.com)
+#   SOLANA_PROGRAM_KEYPAIR — JSON array secret key of the program keypair
+#                             (public key 53K2NJcMTxk36mVecCnSXzX29NmytimWh6a591oYuZSU)
+name: Deploy Pack Blitz program (devnet)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "anchor/**"
+      - ".github/workflows/deploy-program.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: anchor
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust 1.89
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.89.0"
+
+      - name: Install Solana CLI 3.1.9
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v3.1.9/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Install Anchor 1.0.2 (via avm)
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor avm --locked
+          avm install 1.0.2
+          avm use 1.0.2
+          anchor --version
+          solana --version
+
+      - name: Write keypairs
+        env:
+          DEPLOY_KEYPAIR: ${{ secrets.SOLANA_DEPLOY_KEYPAIR }}
+          PROGRAM_KEYPAIR: ${{ secrets.SOLANA_PROGRAM_KEYPAIR }}
+        run: |
+          test -n "$DEPLOY_KEYPAIR" || { echo "missing secret SOLANA_DEPLOY_KEYPAIR"; exit 1; }
+          test -n "$PROGRAM_KEYPAIR" || { echo "missing secret SOLANA_PROGRAM_KEYPAIR"; exit 1; }
+          mkdir -p ~/.config/solana target/deploy
+          printf '%s' "$DEPLOY_KEYPAIR" > ~/.config/solana/id.json
+          printf '%s' "$PROGRAM_KEYPAIR" > target/deploy/pack_blitz-keypair.json
+          chmod 600 ~/.config/solana/id.json target/deploy/pack_blitz-keypair.json
+          solana config set --url devnet --keypair ~/.config/solana/id.json
+          solana balance
+
+      - name: Sync keys + build + deploy
+        run: |
+          anchor keys sync
+          anchor build
+          anchor deploy --provider.cluster devnet
+          anchor keys list
+
+      - name: Commit IDL + program ID back to repo
+        run: |
+          git config user.name "pack-blitz-ci"
+          git config user.email "pack-blitz-ci@users.noreply.github.com"
+          git add target/idl/pack_blitz.json Anchor.toml programs/pack-blitz/src/lib.rs
+          git diff --cached --quiet || git commit -m "deploy: pack-blitz program ID + IDL (devnet)"
+          git push

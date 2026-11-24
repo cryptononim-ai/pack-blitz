@@ -1,0 +1,24 @@
+[package]
+name = "pack-blitz"
+version = "0.1.0"
+description = "Pack Blitz — VRF pack-opening game on MagicBlock Ephemeral Rollups (Solana Blitz v10)"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "pack_blitz"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = { version = "1.0.2", features = ["init-if-needed"] }
+ephemeral-rollups-sdk = { version = "0.18", features = ["anchor", "vrf"] }
