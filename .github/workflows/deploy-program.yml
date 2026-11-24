@@ -65,7 +65,18 @@ jobs:
         run: |
           anchor keys sync
           anchor build
-          anchor deploy --provider.cluster devnet
+          # The 25 Nov first attempt died mid-upload ("Max retries exceeded")
+          # on api.devnet.solana.com and left an orphan buffer account
+          # holding ~1.88 SOL in rent — close stale buffers first to
+          # recover it, then deploy through MagicBlock's devnet RPC
+          # (more reliable for chunked program uploads), with one retry.
+          solana program close --buffers || true
+          solana balance
+          for attempt in 1 2; do
+            anchor deploy --provider.cluster https://rpc.magicblock.app/devnet && break
+            echo "deploy attempt $attempt failed — retrying in 30s…"
+            sleep 30
+          done
           anchor keys list
 
       - name: Commit IDL + program ID back to repo
