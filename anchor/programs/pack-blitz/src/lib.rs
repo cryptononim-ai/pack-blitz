@@ -3,10 +3,19 @@
 // callback stores the result on-chain. The player PDA is delegated to a
 // MagicBlock Ephemeral Rollup, so pack opens are gasless and ~100ms.
 //
-// Adapted from MagicBlock's official roll-dice-delegated example
-// (https://github.com/magicblock-labs/magicblock-engine-examples/tree/main/roll-dice/anchor)
+// Adapted from MagicBlock's official roll-dice-DELEGATED example
+// (https://github.com/magicblock-labs/magicblock-engine-examples/tree/main/roll-dice/anchor/programs/roll-dice-delegated)
 // with the VRF quickstart API pinned to ephemeral-rollups-sdk 0.18
 // (https://docs.magicblock.gg/pages/verifiable-randomness-functions-vrfs/how-to-guide/quickstart).
+//
+// LESSON (25 Nov 2026, found the hard way): the randomness request MUST
+// use `create_request_scoped_randomness_ix` — the exact call the upstream
+// delegated example uses. The first version used
+// `create_request_randomness_ix_const` (from the docs quickstart); the
+// request was accepted by the VRF program (Idx 16) but the callback
+// `callback_open_pack` then burned its whole 273,211 CU budget and died
+// with ProgramFailedToComplete (10 oracle retries, all failed, PDA stayed
+// 0/0). Switched to the scoped variant to match the proven program.
 use anchor_lang::prelude::*;
 use ephemeral_rollups_sdk::{
     anchor::{commit, delegate, ephemeral, vrf, vrf_callback},
@@ -14,8 +23,7 @@ use ephemeral_rollups_sdk::{
     ephem::MagicIntentBundleBuilder,
     vrf::{
         self,
-        consts::program_identity_pubkey,
-        instructions::{create_request_randomness_ix_const, RequestRandomnessParams},
+        instructions::{create_request_scoped_randomness_ix, RequestRandomnessParams},
         types::SerializableAccountMeta,
     },
 };
@@ -25,9 +33,6 @@ use ephemeral_rollups_sdk::{
 declare_id!("53K2NJcMTxk36mVecCnSXzX29NmytimWh6a591oYuZSU");
 
 pub const PLAYER_SEED: &[u8] = b"playerd2";
-
-/// The identity PDA this program signs randomness requests with.
-const PROGRAM_IDENTITY: Pubkey = program_identity_pubkey(&crate::ID);
 
 #[ephemeral]
 #[program]
@@ -62,7 +67,7 @@ pub mod pack_blitz {
             callback_args: Some(vec![client_seed]),
             ..Default::default()
         };
-        let ix = create_request_randomness_ix_const(params, PROGRAM_IDENTITY);
+        let ix = create_request_scoped_randomness_ix(params);
         ctx.accounts
             .invoke_signed_vrf(&ctx.accounts.payer.to_account_info(), &ix)?;
         Ok(())
