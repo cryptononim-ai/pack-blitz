@@ -13,8 +13,19 @@
 #                             (public key 53K2NJcMTxk36mVecCnSXzX29NmytimWh6a591oYuZSU)
 name: Deploy Pack Blitz program (devnet)
 
+# The job commits the IDL + program ID back to the repo, so it needs
+# write permission (the 25 Nov re-run failed at `git push` with 403
+# because the default GITHUB_TOKEN was read-only).
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
+    inputs:
+      deploy_program:
+        description: "Deploy the program to devnet (false = build + commit the IDL only)"
+        type: boolean
+        default: true
   push:
     paths:
       - "anchor/**"
@@ -70,13 +81,20 @@ jobs:
           # holding ~1.88 SOL in rent — close stale buffers first to
           # recover it, then deploy through MagicBlock's devnet RPC
           # (more reliable for chunked program uploads), with one retry.
-          solana program close --buffers || true
-          solana balance
-          for attempt in 1 2; do
-            anchor deploy --provider.cluster https://rpc.magicblock.app/devnet && break
-            echo "deploy attempt $attempt failed — retrying in 30s…"
-            sleep 30
-          done
+          # Skip the whole deploy when run with deploy_program=false
+          # (build + commit the IDL only — used when the program is
+          # already deployed and only the IDL file is missing).
+          if [ "${{ inputs.deploy_program }}" != "false" ]; then
+            solana program close --buffers || true
+            solana balance
+            for attempt in 1 2; do
+              anchor deploy --provider.cluster https://rpc.magicblock.app/devnet && break
+              echo "deploy attempt $attempt failed — retrying in 30s…"
+              sleep 30
+            done
+          else
+            echo "deploy_program=false — skipping deploy, build + IDL commit only"
+          fi
           anchor keys list
 
       - name: Commit IDL + program ID back to repo
