@@ -21,4 +21,10 @@ custom-panic = []
 
 [dependencies]
 anchor-lang = { version = "1.0.2", features = ["init-if-needed"] }
-ephemeral-rollups-sdk = { version = "0.18", features = ["anchor", "vrf"] }
+# SDK 0.16.2 — the exact version the upstream roll-dice-delegated example
+# pins. 0.18 dropped `create_request_scoped_randomness_ix` (the call the
+# proven program uses); its replacement
+# `create_request_randomness_ix_const` produced a callback that starved
+# on compute units (25 Nov 2026). Do NOT bump to 0.18/0.20 without
+# re-verifying the VRF callback end-to-end on devnet.
+ephemeral-rollups-sdk = { version = "0.16.2", features = ["anchor", "vrf"] }
