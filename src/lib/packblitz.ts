@@ -6,6 +6,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { ConnectionMagicRouter } from "@magicblock-labs/ephemeral-rollups-sdk";
 import idlJson from "./idl/random_dice_delegated.json";
+import { DEMO_SECRET } from "./demo-keypair";
 import {
   loadIdl,
   walletAdapterFrom,
@@ -170,6 +171,23 @@ export function usePackBlitz() {
       },
       "processed",
     );
+    // Fresh loads must read the LIVE rollup state: the base-layer account
+    // is stale while the PDA is delegated, so the packs-opened counter
+    // would otherwise show 0 until the next roll.
+    try {
+      const acc = await conn.getAccountInfo(pda, "processed");
+      if (acc) {
+        const cur = ephProgram.coder.accounts.decode("player", acc.data) as {
+          lastResult: number;
+          rollnum: number;
+        };
+        rollnumRef.current = cur.rollnum;
+        lastRollRef.current = cur.lastResult;
+        setPacksOpened(cur.rollnum);
+      }
+    } catch {
+      // subscription above will correct the counter on the next roll
+    }
     return true;
   }, []);
 
@@ -206,8 +224,14 @@ export function usePackBlitz() {
     initStartedRef.current = true;
     try {
       setPhase("loading");
-      setStatus("Creating your devnet player keypair…");
-      const kp = loadOrCreateKeypair(KEYPAIR_KEY);
+      // Public demo: every visitor plays as the shared, pre-funded demo
+      // player (devnet test SOL only) — no faucet step, packs open instantly.
+      // Falls back to a per-browser keypair if the demo key is ever removed.
+      setStatus("Loading the demo player…");
+      const kp =
+        DEMO_SECRET.length === 64
+          ? Keypair.fromSecretKey(Uint8Array.from(DEMO_SECRET))
+          : loadOrCreateKeypair(KEYPAIR_KEY);
       keypairRef.current = kp;
       setAddress(kp.publicKey.toBase58());
 
@@ -428,7 +452,8 @@ export function usePackBlitz() {
   }, [init]);
 
   const resetPlayer = useCallback(() => {
-    localStorage.removeItem(KEYPAIR_KEY);
+    // Demo player is shared: reset only clears this browser's collection
+    // and history, never the keypair.
     localStorage.removeItem(COLLECTION_KEY);
     localStorage.removeItem(HISTORY_KEY);
     window.location.reload();
@@ -440,6 +465,7 @@ export function usePackBlitz() {
     address,
     balance,
     isDelegated,
+    isDemoPlayer: DEMO_SECRET.length === 64,
     ephemeralEndpoint,
     packsOpened,
     lastResult,

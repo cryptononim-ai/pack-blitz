@@ -6,6 +6,12 @@ import { PublicKey } from "@solana/web3.js";
 // (roll-dice, https://roll-dice.magicblock.app/delegated). Pack Blitz is the
 // game built on top of it; the program ID is a single constant so the app can
 // switch to Pack Blitz's own program (Track 2) without other changes.
+//
+// NOTE (25 Nov 2026): the own program (53K2NJcMTxk36mVecCnSXzX29NmytimWh6a591oYuZSU)
+// IS deployed, but its VRF callback burns its whole CU budget and never
+// lands (diagnosis in progress). The live demo stays on MagicBlock's program
+// until the callback is proven end-to-end; the swap is one constant + one
+// method name in packblitz.ts.
 // ---------------------------------------------------------------------------
 export const PROGRAM_ID = new PublicKey(
   "nkPMzRtKV4feTsDfst5P6sH8Rzf4VNe3p9Y1MzMiAme",
@@ -43,33 +49,40 @@ export const RARITY_FROM_ROLL: Record<number, Rarity> = {
 
 export const RARITY_META: Record<
   Rarity,
-  { label: string; chance: string; gradient: string; glow: string }
+  { label: string; chance: string; gradient: string; glow: string; art: string }
 > = {
   common: {
     label: "Common",
     chance: "33%",
     gradient: "linear-gradient(160deg,#8b9bb4,#5b6b82)",
     glow: "#8b9bb4",
+    art: "art/common.jpg",
   },
   rare: {
     label: "Rare",
     chance: "33%",
     gradient: "linear-gradient(160deg,#3b82f6,#1d4ed8)",
     glow: "#3b82f6",
+    art: "art/rare.jpg",
   },
   epic: {
     label: "Epic",
     chance: "17%",
     gradient: "linear-gradient(160deg,#a855f7,#7e22ce)",
     glow: "#a855f7",
+    art: "art/epic.jpg",
   },
   legendary: {
     label: "Legendary",
     chance: "17%",
     gradient: "linear-gradient(160deg,#f59e0b,#b45309)",
     glow: "#f59e0b",
+    art: "art/legendary.jpg",
   },
 };
+
+// Sealed pack artwork shown in the RIP PACKS hero panel.
+export const PACK_ART = "art/pack.jpg";
 
 export type PackCard = {
   id: string;
