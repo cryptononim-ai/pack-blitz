@@ -315,6 +315,189 @@ h2 {
   background: var(--bg2); padding: 2px 6px; border-radius: 6px; word-break: break-all;
 }
 
+/* ---- rip experience: peel, fly-out, flip, shine (packs.com loop) ---- */
+/* the pack's top flap peels back like foil; the card back rises from inside */
+.pack-peel {
+  position: relative; width: 210px; aspect-ratio: 1 / 2;
+  transform: rotate(-2deg);
+  perspective: 700px;
+  animation: pack-shake 0.35s ease-in-out;
+}
+@keyframes pack-shake {
+  0%, 100% { transform: rotate(-2deg) translateX(0); }
+  25% { transform: rotate(-3.5deg) translateX(-4px); }
+  50% { transform: rotate(-0.5deg) translateX(4px); }
+  75% { transform: rotate(-3deg) translateX(-3px); }
+}
+.pack-base {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; border-radius: 12px;
+  box-shadow: 0 0 60px #a855f799, 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+.pack-flap {
+  position: absolute; left: 0; right: 0; top: 0; height: 34%;
+  object-fit: cover; object-position: top;
+  border-radius: 12px 12px 0 0;
+  clip-path: polygon(0 0, 100% 0, 100% 78%, 88% 88%, 74% 76%, 60% 90%, 46% 78%, 32% 90%, 18% 77%, 0 88%);
+  transform-origin: top center;
+  animation: peel-flap 1.2s cubic-bezier(0.3, 0.7, 0.3, 1) 0.35s forwards;
+  z-index: 3;
+}
+@keyframes peel-flap {
+  0% { transform: rotateX(0) translateY(0) rotate(0); opacity: 1; }
+  30% { transform: rotateX(-50deg) translateY(-18px) rotate(-4deg); opacity: 1; }
+  60% { transform: rotateX(-95deg) translateY(-60px) rotate(-10deg); opacity: 1; }
+  100% { transform: rotateX(-115deg) translateY(-100px) rotate(-16deg) scale(0.9); opacity: 0; }
+}
+.peel-flash {
+  position: absolute; left: -12%; right: -12%; top: 30%; height: 5px;
+  background: linear-gradient(90deg, transparent, #fff8d0, #ffd34d, #fff8d0, transparent);
+  box-shadow: 0 0 32px 10px rgba(255, 211, 77, 0.65);
+  transform: rotate(-3deg);
+  animation: tear-flash 0.7s ease-out 0.35s forwards;
+  pointer-events: none; z-index: 4;
+}
+@keyframes tear-flash {
+  0% { opacity: 0; transform: rotate(-3deg) scaleX(0.2); }
+  25% { opacity: 1; transform: rotate(-3deg) scaleX(1); }
+  100% { opacity: 0; transform: rotate(-3deg) scaleX(1); }
+}
+/* a card back rising out of the peeled pack while the VRF roll lands */
+.pack-peek {
+  position: absolute; left: 50%; top: 30%; width: 110px; height: 154px;
+  transform: translateX(-50%) translateY(70px) rotate(4deg);
+  border-radius: 10px; z-index: 2;
+  background: linear-gradient(160deg, #2b1a4d, #171a21 60%), #171a21;
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 28px rgba(245, 185, 11, 0.5);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  color: var(--gold2);
+  animation: peek-up 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) 0.7s forwards;
+}
+.pack-peek .peek-mark { font-size: 34px; font-weight: 900; line-height: 1; }
+.pack-peek .peek-label { font-size: 9px; font-weight: 900; letter-spacing: 2px; }
+@keyframes peek-up {
+  from { transform: translateX(-50%) translateY(70px) rotate(4deg); }
+  to { transform: translateX(-50%) translateY(-42px) rotate(4deg); }
+}
+
+/* the revealed card flies out of the pack into the LAST PULL panel */
+.pack-card.flying {
+  animation: fly-in 0.7s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+@keyframes fly-in {
+  0% { transform: translate(-46%, 10%) scale(0.45) rotate(-16deg); opacity: 0; }
+  55% { transform: translate(-8%, 2%) scale(1.04) rotate(2deg); opacity: 1; }
+  100% { transform: translate(0, 0) scale(1) rotate(0); opacity: 1; }
+}
+/* shine sweep + glow pulse on the fresh pull */
+.pack-card.shining {
+  animation: fly-in 0.7s cubic-bezier(0.2, 0.8, 0.25, 1) both, glow-pulse 2.2s ease-in-out 0.7s infinite;
+}
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 32px var(--glow, #f5b90b); }
+  50% { box-shadow: 0 0 90px 18px var(--glow, #f5b90b); }
+}
+.card-shine {
+  position: absolute; inset: -40% -60%; z-index: 3; pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.75) 50%, rgba(255, 211, 77, 0.5) 54%, transparent 62%);
+  animation: shine-sweep 1.2s ease-in-out 0.7s both, shine-sweep 1.2s ease-in-out 3.2s both;
+}
+@keyframes shine-sweep {
+  from { transform: translateX(-70%) skewX(-12deg); }
+  to { transform: translateX(70%) skewX(-12deg); }
+}
+/* gold flash the moment the card flips face-up */
+.card-flash {
+  position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 248, 208, 0.95) 0%, rgba(255, 211, 77, 0.55) 45%, transparent 75%);
+  animation: flash-out 0.7s ease-out both;
+}
+@keyframes flash-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+/* golden burst behind the fresh pull */
+.pull-card-wrap { position: relative; z-index: 0; display: flex; align-items: center; justify-content: center; }
+.pull-burst {
+  position: absolute; width: 340px; height: 340px; border-radius: 50%;
+  background: radial-gradient(circle, var(--glow, #f5b90b) 0%, transparent 62%);
+  opacity: 0.4; filter: blur(6px); pointer-events: none;
+  animation: burst-fade 1.6s ease-out both;
+}
+@keyframes burst-fade {
+  0% { opacity: 0.65; transform: scale(0.6); }
+  100% { opacity: 0.28; transform: scale(1); }
+}
+.panel-art { position: relative; }
+
+/* ---- tap-to-flip: card back first, tap reveals the front ---- */
+.flip-card { perspective: 1200px; cursor: pointer; }
+.flip-card.flying { animation: fly-in 0.7s cubic-bezier(0.2, 0.8, 0.25, 1) both; }
+.flip-inner {
+  position: relative; width: 230px; height: 320px;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+.flip-card.flipped .flip-inner { transform: rotateY(180deg); }
+.flip-face {
+  position: absolute; inset: 0;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+}
+.flip-face.back { transform: rotateY(0); }
+.flip-face.front { transform: rotateY(180deg); }
+/* the front face is the normal PackCardView; it must fill the flip frame */
+.flip-face.front .pack-card { animation: none; width: 100%; height: 100%; }
+.flip-face.front .pack-card.shining {
+  animation: glow-pulse 2.2s ease-in-out 0.7s infinite;
+}
+.card-back {
+  width: 100%; height: 100%; border-radius: 16px; overflow: hidden;
+  border: 2px solid var(--glow, #f5b90b);
+  background:
+    radial-gradient(90% 70% at 50% 30%, color-mix(in srgb, var(--glow, #f5b90b) 45%, #171a21) 0%, #12141c 70%);
+  box-shadow: 0 0 32px color-mix(in srgb, var(--glow, #f5b90b) 55%, transparent);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  color: var(--text);
+}
+.card-back .back-mark {
+  width: 74px; height: 74px; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35); border: 2px solid var(--glow, #f5b90b);
+  display: flex; align-items: center; justify-content: center;
+}
+.card-back .back-mark svg { width: 40px; height: 40px; }
+.card-back .back-title { font-size: 20px; font-weight: 900; letter-spacing: 3px; }
+.card-back .back-hint {
+  font-size: 11px; font-weight: 800; letter-spacing: 2px; color: var(--gold2);
+  animation: hint-pulse 1.4s ease-in-out infinite;
+}
+@keyframes hint-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+/* next card peeking behind the revealed one (stack depth, like packs.com) */
+.card-stack-back {
+  position: absolute; top: -8px; right: -14px; width: 230px; height: 320px;
+  border-radius: 16px; z-index: -1; transform: rotate(7deg);
+  background: linear-gradient(160deg, #2b1a4d, #12141c 65%);
+  border: 2px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 44px; font-weight: 900; color: rgba(255, 255, 255, 0.16);
+}
+/* gold sparkles around the pull panel */
+.sparkle {
+  position: absolute; width: 18px; height: 18px; pointer-events: none; z-index: 5;
+  background: radial-gradient(circle, #fff8d0 0%, #ffd34d 45%, transparent 70%);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  animation: twinkle 1.8s ease-in-out infinite;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.6) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.15) rotate(25deg); }
+}
+.flip-hint { margin-top: 14px; }
+
 footer {
   margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border);
   color: var(--muted); font-size: 13px; text-align: center;

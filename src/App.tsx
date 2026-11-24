@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePackBlitz } from "./lib/packblitz";
 import { CARD_POOL, RARITY_META, PROGRAM_ID, PACK_ART } from "./lib/config";
 import type { Rarity } from "./lib/config";
-import { PackCardView, CardSlot } from "./components/PackCard";
+import { CardSlot, FlipCard } from "./components/PackCard";
 
 const BASE = import.meta.env.BASE_URL;
 const ALL_CARDS = [
@@ -27,6 +27,12 @@ function short(addr: string) {
 export default function App() {
   const game = usePackBlitz();
   const [filter, setFilter] = useState<Rarity | "all">("all");
+  // Tap-to-flip: a fresh pull shows its back first; reset on every new pull.
+  const [flipped, setFlipped] = useState(false);
+  const lastSig = game.lastResult?.signature;
+  useEffect(() => {
+    setFlipped(false);
+  }, [lastSig]);
   const shown =
     filter === "all" ? ALL_CARDS : ALL_CARDS.filter((c) => c.rarity === filter);
   const best = game.history.reduce<string | null>((acc, h) => {
@@ -117,11 +123,33 @@ export default function App() {
               <span className="live-dot" /> {game.packsOpened} ripping
             </div>
             <div className="panel-art">
-              <img
-                className={`pack-img ${game.phase === "rolling" ? "shaking" : ""}`}
-                src={`${BASE}${PACK_ART}`}
-                alt="Sealed Pack Blitz booster pack"
-              />
+              {game.phase === "rolling" ? (
+                <div className="pack-peel" aria-label="Peeling the pack open">
+                  <img
+                    className="pack-base"
+                    src={`${BASE}${PACK_ART}`}
+                    alt=""
+                    aria-hidden
+                  />
+                  <img
+                    className="pack-flap"
+                    src={`${BASE}${PACK_ART}`}
+                    alt=""
+                    aria-hidden
+                  />
+                  <div className="peel-flash" aria-hidden />
+                  <div className="pack-peek" aria-hidden>
+                    <span className="peek-mark">⚡</span>
+                    <span className="peek-label">PACK BLITZ</span>
+                  </div>
+                </div>
+              ) : (
+                <img
+                  className="pack-img"
+                  src={`${BASE}${PACK_ART}`}
+                  alt="Sealed Pack Blitz booster pack"
+                />
+              )}
               <div className="panel-badge">10 CARDS</div>
             </div>
             <h2 className="panel-title">
@@ -153,14 +181,28 @@ export default function App() {
             </div>
             <div className="panel-art">
               {game.lastResult ? (
-                <PackCardView
-                  card={game.lastResult.card}
-                  isNew={
-                    !game.history
-                      .slice(1)
-                      .some((h) => h.card.id === game.lastResult?.card.id)
-                  }
-                />
+                <div
+                  className="pull-card-wrap"
+                  style={{ ["--glow" as string]: RARITY_META[game.lastResult.card.rarity].glow }}
+                >
+                  <div className="pull-burst" aria-hidden />
+                  <span className="sparkle" style={{ top: "6%", left: "8%", animationDelay: "0s" }} aria-hidden />
+                  <span className="sparkle" style={{ top: "12%", right: "10%", animationDelay: "0.5s", width: 14, height: 14 }} aria-hidden />
+                  <span className="sparkle" style={{ bottom: "10%", left: "4%", animationDelay: "0.9s", width: 12, height: 12 }} aria-hidden />
+                  <span className="sparkle" style={{ bottom: "22%", right: "2%", animationDelay: "1.3s", width: 22, height: 22 }} aria-hidden />
+                  <div className="card-stack-back" aria-hidden>?</div>
+                  <FlipCard
+                    key={game.lastResult.signature}
+                    card={game.lastResult.card}
+                    flipped={flipped}
+                    onFlip={() => setFlipped(true)}
+                    isNew={
+                      !game.history
+                        .slice(1)
+                        .some((h) => h.card.id === game.lastResult?.card.id)
+                    }
+                  />
+                </div>
               ) : (
                 <div className="mystery-card">
                   <span className="mystery-q">?</span>
@@ -168,6 +210,11 @@ export default function App() {
                 </div>
               )}
             </div>
+            {game.lastResult && !flipped && (
+              <button className="btn flip-hint" onClick={() => setFlipped(true)}>
+                ↻ FLIP IT!
+              </button>
+            )}
             <h2 className="panel-title">
               LAST PULL <span className="arrow">›</span>
             </h2>

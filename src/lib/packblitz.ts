@@ -387,6 +387,11 @@ export function usePackBlitz() {
         latencyMs,
         signature,
       };
+      // Drama hold: the VRF often lands in ~600ms, faster than the peel
+      // animation (1.2s). Hold the peeled state so the peel is actually
+      // seen before the card back appears in LAST PULL.
+      const elapsed = Date.now() - t0;
+      if (elapsed < 1500) await sleep(1500 - elapsed);
       setLastResult(pack);
       setLastLatency(latencyMs);
       setHistory((prev) => {
