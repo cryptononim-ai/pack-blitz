@@ -130,7 +130,7 @@ h2 {
   margin: 10px 0 4px;
 }
 .pack-img {
-  width: 210px; height: auto; border-radius: 12px;
+  width: min(300px, 80vw); height: auto; border-radius: 12px;
   box-shadow: 0 0 60px #a855f799, 0 18px 40px rgba(0, 0, 0, 0.55);
   transform: rotate(-2deg);
 }
@@ -318,67 +318,92 @@ h2 {
 /* ---- rip experience: peel, fly-out, flip, shine (packs.com loop) ---- */
 /* the pack's top flap peels back like foil; the card back rises from inside */
 .pack-peel {
-  position: relative; width: 210px; aspect-ratio: 1 / 2;
+  position: relative; width: min(300px, 80vw); aspect-ratio: 1 / 2;
   transform: rotate(-2deg);
   perspective: 700px;
-  animation: pack-shake 0.35s ease-in-out;
+  animation: pack-shake 0.4s ease-in-out both;
 }
 @keyframes pack-shake {
-  0%, 100% { transform: rotate(-2deg) translateX(0); }
+  0% { transform: rotate(-2deg) translateX(0); }
   25% { transform: rotate(-3.5deg) translateX(-4px); }
   50% { transform: rotate(-0.5deg) translateX(4px); }
   75% { transform: rotate(-3deg) translateX(-3px); }
+  /* Hold the tilt: packs.com's pack leans ~-8deg while it tears */
+  100% { transform: rotate(-8deg) translateX(0); }
+}
+/* Dark interior of the pack: shows through the torn opening once the
+   flap peels away. Without it the pack underneath looks sealed. */
+.pack-inside {
+  position: absolute; inset: 0; z-index: 0;
+  background: radial-gradient(ellipse at 50% 0%, #2a1a4d 0%, #12081f 55%, #07040f 100%);
+  border-radius: 12px;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9);
 }
 .pack-base {
-  position: absolute; inset: 0; width: 100%; height: 100%;
+  position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1;
   object-fit: cover; border-radius: 12px;
   box-shadow: 0 0 60px #a855f799, 0 18px 40px rgba(0, 0, 0, 0.55);
+  /* Open edge: packs.com tears ONLY the narrow top seal strip (~10%),
+     leaving a clean near-straight edge — not a deep zigzag chunk.
+     This edge MUST match the flap's bottom edge exactly. */
+  clip-path: polygon(0 8%, 18% 9%, 45% 10%, 70% 11%, 100% 13%, 100% 100%, 0 100%);
+  /* Torn foil edge catches light */
+  filter: drop-shadow(0 -3px 4px rgba(255, 200, 100, 0.4));
 }
 .pack-flap {
-  position: absolute; left: 0; right: 0; top: 0; height: 34%;
+  position: absolute; left: 0; right: 0; top: 0; height: 14%;
   object-fit: cover; object-position: top;
   border-radius: 12px 12px 0 0;
-  clip-path: polygon(0 0, 100% 0, 100% 78%, 88% 88%, 74% 76%, 60% 90%, 46% 78%, 32% 90%, 18% 77%, 0 88%);
-  transform-origin: top center;
-  animation: peel-flap 1.2s cubic-bezier(0.3, 0.7, 0.3, 1) 0.35s forwards;
-  z-index: 3;
+  /* Bottom edge mirrors the pack body's open edge (same line, in flap
+     coordinates: pack-y / 14% of pack height). */
+  clip-path: polygon(0 0, 100% 0, 100% 93%, 70% 79%, 45% 71%, 18% 64%, 0 57%);
+  /* Corner tear: the strip lifts from the top-left and folds back around
+     the top-right, like turning a page corner — packs.com's exact move. */
+  transform-origin: 85% 0;
+  animation: peel-flap 1.0s cubic-bezier(0.3, 0.7, 0.3, 1) 0.25s forwards;
+  z-index: 3; will-change: transform;
+  /* A torn foil piece must read as separate from the pack: brighter + shadow */
+  filter: brightness(1.14) saturate(1.1);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.65);
 }
 @keyframes peel-flap {
-  0% { transform: rotateX(0) translateY(0) rotate(0); opacity: 1; }
-  30% { transform: rotateX(-50deg) translateY(-18px) rotate(-4deg); opacity: 1; }
-  60% { transform: rotateX(-95deg) translateY(-60px) rotate(-10deg); opacity: 1; }
-  100% { transform: rotateX(-115deg) translateY(-100px) rotate(-16deg) scale(0.9); opacity: 0; }
+  0% { transform: rotate(0) translate(0, 0) rotateY(0); opacity: 1; }
+  40% { transform: rotate(-22deg) translate(12px, -26px) rotateY(-18deg); opacity: 1; }
+  75% { transform: rotate(-38deg) translate(34px, -62px) rotateY(-30deg); opacity: 1; }
+  /* The strip flies off up-right and fades — it does not stay folded */
+  100% { transform: rotate(-48deg) translate(70px, -130px) rotateY(-40deg); opacity: 0; }
 }
+/* Gold burst from the tear line — packs.com's glow as the seal rips */
 .peel-flash {
-  position: absolute; left: -12%; right: -12%; top: 30%; height: 5px;
-  background: linear-gradient(90deg, transparent, #fff8d0, #ffd34d, #fff8d0, transparent);
-  box-shadow: 0 0 32px 10px rgba(255, 211, 77, 0.65);
-  transform: rotate(-3deg);
-  animation: tear-flash 0.7s ease-out 0.35s forwards;
+  position: absolute; left: 50%; top: 2%; width: 220px; height: 130px;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(255, 250, 220, 0.95) 0%, rgba(255, 211, 77, 0.65) 35%, rgba(255, 180, 60, 0.25) 60%, transparent 72%);
+  opacity: 0;
+  animation: tear-burst 0.8s ease-out 0.25s both;
   pointer-events: none; z-index: 4;
 }
-@keyframes tear-flash {
-  0% { opacity: 0; transform: rotate(-3deg) scaleX(0.2); }
-  25% { opacity: 1; transform: rotate(-3deg) scaleX(1); }
-  100% { opacity: 0; transform: rotate(-3deg) scaleX(1); }
+@keyframes tear-burst {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.4); }
+  30% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1.35); }
 }
 /* a card back rising out of the peeled pack while the VRF roll lands */
 .pack-peek {
-  position: absolute; left: 50%; top: 30%; width: 110px; height: 154px;
-  transform: translateX(-50%) translateY(70px) rotate(4deg);
+  position: absolute; left: 50%; top: 6%; width: 150px; height: 210px;
+  transform: translateX(-50%) translateY(130px) rotate(4deg);
   border-radius: 10px; z-index: 2;
   background: linear-gradient(160deg, #2b1a4d, #171a21 60%), #171a21;
   border: 2px solid var(--gold);
   box-shadow: 0 0 28px rgba(245, 185, 11, 0.5);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   color: var(--gold2);
-  animation: peek-up 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) 0.7s forwards;
+  animation: peek-up 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) 0.5s both;
 }
-.pack-peek .peek-mark { font-size: 34px; font-weight: 900; line-height: 1; }
-.pack-peek .peek-label { font-size: 9px; font-weight: 900; letter-spacing: 2px; }
+.pack-peek .peek-mark { font-size: 44px; font-weight: 900; line-height: 1; }
+.pack-peek .peek-label { font-size: 11px; font-weight: 900; letter-spacing: 2px; }
 @keyframes peek-up {
-  from { transform: translateX(-50%) translateY(70px) rotate(4deg); }
-  to { transform: translateX(-50%) translateY(-42px) rotate(4deg); }
+  from { transform: translateX(-50%) translateY(130px) rotate(4deg); }
+  to { transform: translateX(-50%) translateY(-34px) rotate(4deg); }
 }
 
 /* the revealed card flies out of the pack into the LAST PULL panel */
@@ -501,4 +526,46 @@ h2 {
 footer {
   margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border);
   color: var(--muted); font-size: 13px; text-align: center;
+}
+
+/* ---- fullscreen rip overlay (packs.com-style opening) ---- */
+.rip-overlay {
+  position: fixed; inset: 0; z-index: 100; overflow-y: auto;
+  background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 45%, #4c1d95 100%);
+  color: #fff; display: flex; flex-direction: column; align-items: center;
+  padding: 18px 16px 32px;
+}
+.rip-close {
+  position: absolute; top: 14px; left: 14px; width: 40px; height: 40px;
+  border-radius: 50%; background: rgba(255, 255, 255, 0.16); border: none;
+  color: #fff; font-size: 20px; cursor: pointer; line-height: 1;
+}
+.rip-kicker { font-size: 12px; letter-spacing: 3px; opacity: 0.85; font-weight: 700; margin-top: 10px; }
+.rip-title { font-size: 34px; font-weight: 900; letter-spacing: 1px; margin: 2px 0 8px; text-align: center; }
+.rip-hint { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; margin-bottom: 4px; animation: hint-pulse 1.6s ease-in-out infinite; }
+.rip-hand { display: inline-block; font-size: 20px; animation: hint-pulse 1.6s ease-in-out infinite; }
+.rip-pack-zone {
+  position: relative; flex: 1; display: flex; align-items: center; justify-content: center;
+  min-height: 440px; width: 100%; touch-action: none; cursor: grab; user-select: none;
+}
+.rip-pack-zone:active { cursor: grabbing; }
+/* Inside the overlay the drag drives every transform — CSS keyframes off */
+.rip-overlay .pack-peel { animation: none; }
+.rip-overlay .pack-flap { animation: none; }
+.rip-overlay .peel-flash { animation: none; }
+.rip-overlay .pack-peek { animation: none; }
+.rip-waiting { font-size: 15px; font-weight: 700; opacity: 0.9; margin-top: 12px; text-align: center; }
+.rip-error { color: #fca5a5; font-size: 14px; margin-top: 8px; text-align: center; }
+.rip-reveal { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 8px; }
+.rip-count { font-size: 13px; font-weight: 800; letter-spacing: 2px; opacity: 0.85; }
+.rip-reveal-name { font-size: 16px; font-weight: 800; text-align: center; }
+.rip-next {
+  background: #8bff3d; color: #0b0d12; border: none; border-radius: 12px;
+  padding: 14px 26px; font-size: 17px; font-weight: 900; cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); margin-top: 4px;
+}
+.rip-flip-btn {
+  background: rgba(255, 255, 255, 0.16); color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 999px;
+  padding: 9px 18px; font-size: 14px; font-weight: 800; cursor: pointer;
 }

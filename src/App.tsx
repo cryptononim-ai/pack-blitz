@@ -3,6 +3,7 @@ import { usePackBlitz } from "./lib/packblitz";
 import { CARD_POOL, RARITY_META, PROGRAM_ID, PACK_ART } from "./lib/config";
 import type { Rarity } from "./lib/config";
 import { CardSlot, FlipCard } from "./components/PackCard";
+import { RipOverlay } from "./components/RipOverlay";
 
 const BASE = import.meta.env.BASE_URL;
 const ALL_CARDS = [
@@ -27,6 +28,9 @@ function short(addr: string) {
 export default function App() {
   const game = usePackBlitz();
   const [filter, setFilter] = useState<Rarity | "all">("all");
+  // Full-screen rip overlay (packs.com style). Opens on OPEN PACK; the
+  // VRF roll runs underneath while the user drags the peel.
+  const [ripOpen, setRipOpen] = useState(false);
   // Tap-to-flip: a fresh pull shows its back first; reset on every new pull.
   const [flipped, setFlipped] = useState(false);
   const lastSig = game.lastResult?.signature;
@@ -46,6 +50,7 @@ export default function App() {
 
   return (
     <div className="page">
+      {ripOpen && <RipOverlay game={game} onClose={() => setRipOpen(false)} />}
       <header className="topbar">
         <a className="brand" href="#top">
           <span className="logo-mark">
@@ -125,6 +130,7 @@ export default function App() {
             <div className="panel-art">
               {game.phase === "rolling" ? (
                 <div className="pack-peel" aria-label="Peeling the pack open">
+                  <div className="pack-inside" aria-hidden />
                   <img
                     className="pack-base"
                     src={`${BASE}${PACK_ART}`}
@@ -150,7 +156,9 @@ export default function App() {
                   alt="Sealed Pack Blitz booster pack"
                 />
               )}
-              <div className="panel-badge">10 CARDS</div>
+              {game.phase !== "rolling" && (
+                <div className="panel-badge">10 CARDS</div>
+              )}
             </div>
             <h2 className="panel-title">
               RIP PACKS <span className="arrow">›</span>
@@ -162,7 +170,10 @@ export default function App() {
             <button
               className="btn big rip-btn"
               disabled={game.phase !== "ready"}
-              onClick={() => void game.openPack()}
+              onClick={() => {
+                setRipOpen(true);
+                void game.openPack();
+              }}
             >
               {game.phase === "rolling"
                 ? "OPENING…"
