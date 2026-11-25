@@ -1,20 +1,21 @@
 import { PublicKey } from "@solana/web3.js";
 
 // ---------------------------------------------------------------------------
-// MagicBlock network (devnet) — official roll-dice delegated program.
-// The VRF + Ephemeral Rollup program is MagicBlock's own deployed example
-// (roll-dice, https://roll-dice.magicblock.app/delegated). Pack Blitz is the
-// game built on top of it; the program ID is a single constant so the app can
-// switch to Pack Blitz's own program (Track 2) without other changes.
+// MagicBlock network (devnet) — Pack Blitz's OWN Anchor program.
+// The VRF + Ephemeral Rollup program was MagicBlock's roll-dice example
+// (roll-dice, https://roll-dice.magicblock.app/delegated); Pack Blitz now
+// runs on its own program (Track 2) with the same interface.
 //
-// NOTE (25 Nov 2026): the own program (53K2NJcMTxk36mVecCnSXzX29NmytimWh6a591oYuZSU)
-// IS deployed, but its VRF callback burns its whole CU budget and never
-// lands (diagnosis in progress). The live demo stays on MagicBlock's program
-// until the callback is proven end-to-end; the swap is one constant + one
-// method name in packblitz.ts.
+// NOTE (25 Nov 2026): the own program's VRF callback is FIXED — the
+// #[vrf_callback] macro's generated constraint code burned the whole CU
+// budget; the diagnostic build checks the scoped VRF identity in-handler
+// instead. Probe 25 Nov ~08:24 WIB: "callback entered, client_seed=8",
+// 7,361 of 200,000 CU, ConstraintAddress only because the probe used a
+// FAKE identity (correct rejection). Program ID 53K2...; programdata
+// 370,352 B on-chain (was 370,397 B).
 // ---------------------------------------------------------------------------
 export const PROGRAM_ID = new PublicKey(
-  "nkPMzRtKV4feTsDfst5P6sH8Rzf4VNe3p9Y1MzMiAme",
+  "53K2NJcMTxk36mVecCnSXzX29NmytimWh6a591oYuZSU",
 );
 export const PLAYER_SEED = "playerd2";
 export const ORACLE_QUEUE = new PublicKey(

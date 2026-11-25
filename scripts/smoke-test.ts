@@ -11,7 +11,7 @@ import { ConnectionMagicRouter } from "@magicblock-labs/ephemeral-rollups-sdk";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import idlJson from "../src/lib/idl/random_dice_delegated.json";
+import idlJson from "../src/lib/idl/pack_blitz.json";
 import { loadIdl, walletAdapterFrom, ensureFunds } from "../src/lib/solana-utils";
 import {
   PROGRAM_ID,
@@ -165,7 +165,7 @@ async function main() {
   const seed = Math.floor(Math.random() * 256);
   const t0 = Date.now();
   const tx = await ephProgram.methods
-    .rollDiceDelegated(seed)
+    .openPack(seed)
     .accounts({ payer: kp.publicKey, player: pda, oracleQueue: ORACLE_QUEUE })
     .transaction();
   const { blockhash } = await ephConn.getLatestBlockhash();

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as anchor from "@coral-xyz/anchor";
 import { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { ConnectionMagicRouter } from "@magicblock-labs/ephemeral-rollups-sdk";
-import idlJson from "./idl/random_dice_delegated.json";
+import idlJson from "./idl/pack_blitz.json";
 import { DEMO_SECRET } from "./demo-keypair";
 import {
   loadIdl,
@@ -343,7 +343,7 @@ export function usePackBlitz() {
     const t0 = Date.now();
     try {
       const tx = await ephProgram.methods
-        .rollDiceDelegated(seed)
+        .openPack(seed)
         .accounts({ payer: kp.publicKey, player: pda, oracleQueue: ORACLE_QUEUE })
         .transaction();
       const { blockhash } = await ephConn.getLatestBlockhash();
